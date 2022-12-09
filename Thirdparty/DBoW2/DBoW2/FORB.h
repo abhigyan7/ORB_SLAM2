@@ -44,7 +44,7 @@ public:
    * @param b
    * @return distance
    */
-  static int distance(const TDescriptor &a, const TDescriptor &b);
+  static float distance(const TDescriptor &a, const TDescriptor &b);
 
   /**
    * Returns a string version of the descriptor

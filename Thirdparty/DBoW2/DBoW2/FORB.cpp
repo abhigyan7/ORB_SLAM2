@@ -23,7 +23,7 @@ namespace DBoW2 {
 
 // --------------------------------------------------------------------------
 
-const int FORB::L=32;
+const int FORB::L=128;
 
 void FORB::meanValue(const std::vector<FORB::pDescriptor> &descriptors, 
   FORB::TDescriptor &mean)
@@ -39,48 +39,28 @@ void FORB::meanValue(const std::vector<FORB::pDescriptor> &descriptors,
   }
   else
   {
-    vector<int> sum(FORB::L * 8, 0);
-    
-    for(size_t i = 0; i < descriptors.size(); ++i)
+    mean.resize(FORB::L, 0);
+
+    vector<FORB::pDescriptor>::const_iterator it;
+    for (it = descriptors.begin(); it!=descriptors.end(); ++it)
     {
-      const cv::Mat &d = *descriptors[i];
-      const unsigned char *p = d.ptr<unsigned char>();
-      
-      for(int j = 0; j < d.cols; ++j, ++p)
+      const FORB::TDescriptor &desc = **it;;
+      for (int i = 0; i < FORB::L; ++i)
       {
-        if(*p & (1 << 7)) ++sum[ j*8     ];
-        if(*p & (1 << 6)) ++sum[ j*8 + 1 ];
-        if(*p & (1 << 5)) ++sum[ j*8 + 2 ];
-        if(*p & (1 << 4)) ++sum[ j*8 + 3 ];
-        if(*p & (1 << 3)) ++sum[ j*8 + 4 ];
-        if(*p & (1 << 2)) ++sum[ j*8 + 5 ];
-        if(*p & (1 << 1)) ++sum[ j*8 + 6 ];
-        if(*p & (1))      ++sum[ j*8 + 7 ];
+        mean.at<float>(i) += desc.at<float>(i);
       }
-    }
-    
-    mean = cv::Mat::zeros(1, FORB::L, CV_8U);
-    unsigned char *p = mean.ptr<unsigned char>();
-    
-    const int N2 = (int)descriptors.size() / 2 + descriptors.size() % 2;
-    for(size_t i = 0; i < sum.size(); ++i)
-    {
-      if(sum[i] >= N2)
-      {
-        // set bit
-        *p |= 1 << (7 - (i % 8));
-      }
-      
-      if(i % 8 == 7) ++p;
     }
   }
+  mean = mean / static_cast<float>(descriptors.size());
 }
 
 // --------------------------------------------------------------------------
   
-int FORB::distance(const FORB::TDescriptor &a,
+float FORB::distance(const FORB::TDescriptor &a,
   const FORB::TDescriptor &b)
 {
+
+  return cv::norm(a, b);
   // Bit set count operation from
   // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
 
@@ -105,11 +85,11 @@ int FORB::distance(const FORB::TDescriptor &a,
 std::string FORB::toString(const FORB::TDescriptor &a)
 {
   stringstream ss;
-  const unsigned char *p = a.ptr<unsigned char>();
+  const float *p = a.ptr<float>();
   
   for(int i = 0; i < a.cols; ++i, ++p)
   {
-    ss << (int)*p << " ";
+    ss << (float )*p << " ";
   }
   
   return ss.str();
@@ -119,17 +99,17 @@ std::string FORB::toString(const FORB::TDescriptor &a)
   
 void FORB::fromString(FORB::TDescriptor &a, const std::string &s)
 {
-  a.create(1, FORB::L, CV_8U);
-  unsigned char *p = a.ptr<unsigned char>();
+  a.create(1, FORB::L, CV_32F);
+  float *p = a.ptr<float>();
   
   stringstream ss(s);
   for(int i = 0; i < FORB::L; ++i, ++p)
   {
-    int n;
+    float n;
     ss >> n;
     
     if(!ss.fail()) 
-      *p = (unsigned char)n;
+      *p = (float) n;
   }
   
 }
@@ -147,24 +127,25 @@ void FORB::toMat32F(const std::vector<TDescriptor> &descriptors,
   
   const size_t N = descriptors.size();
   
-  mat.create(N, FORB::L*8, CV_32F);
+  mat.create(N, FORB::L, CV_32F);
   float *p = mat.ptr<float>();
   
   for(size_t i = 0; i < N; ++i)
   {
     const int C = descriptors[i].cols;
-    const unsigned char *desc = descriptors[i].ptr<unsigned char>();
+    const float* desc = descriptors[i].ptr<float>();
     
-    for(int j = 0; j < C; ++j, p += 8)
+    for(int j = 0; j < C; ++j, p += 1)
     {
-      p[0] = (desc[j] & (1 << 7) ? 1 : 0);
-      p[1] = (desc[j] & (1 << 6) ? 1 : 0);
-      p[2] = (desc[j] & (1 << 5) ? 1 : 0);
-      p[3] = (desc[j] & (1 << 4) ? 1 : 0);
-      p[4] = (desc[j] & (1 << 3) ? 1 : 0);
-      p[5] = (desc[j] & (1 << 2) ? 1 : 0);
-      p[6] = (desc[j] & (1 << 1) ? 1 : 0);
-      p[7] = desc[j] & (1);
+      *p = desc.at<float>(j);
+      // p[0] = (desc[j] & (1 << 7) ? 1 : 0);
+      // p[1] = (desc[j] & (1 << 6) ? 1 : 0);
+      // p[2] = (desc[j] & (1 << 5) ? 1 : 0);
+      // p[3] = (desc[j] & (1 << 4) ? 1 : 0);
+      // p[4] = (desc[j] & (1 << 3) ? 1 : 0);
+      // p[5] = (desc[j] & (1 << 2) ? 1 : 0);
+      // p[6] = (desc[j] & (1 << 1) ? 1 : 0);
+      // p[7] = desc[j] & (1);
     }
   } 
 }
