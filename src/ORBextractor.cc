@@ -73,6 +73,9 @@ const int PATCH_SIZE = 31;
 const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
+const int DESCRIPTOR_LENGTH = 128;
+#define DESCRIPTOR_TYPE CV_32F;
+
 
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 {
@@ -106,6 +109,25 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 
 const float factorPI = (float)(CV_PI/180.f);
 static void computeOrbDescriptor(const KeyPoint& kpt,
+                                 const Mat& img, const Point* pattern
+                                 float* desc)
+{
+    auto sift_descriptor = cv::SIFT::create(0, 1, 0.04, 10, 1.6, CV_32F);
+
+    cv::Mat descriptors;
+    std::vector<KeyPoint> p1(1);
+    p1[0] = kpt;
+
+    sift_detector->compute(img, p1, descriptors);
+
+    for (size_t i = 0; i < 128; ++i)
+    {
+        desc[i] = descriptors.at<float>(i);
+    }
+
+}
+
+static void _computeOrbDescriptor(const KeyPoint& kpt,
                                  const Mat& img, const Point* pattern,
                                  uchar* desc)
 {
@@ -1034,7 +1056,7 @@ void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allK
 static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
                                const vector<Point>& pattern)
 {
-    descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
+    descriptors = Mat::zeros((int)keypoints.size(), DESCRIPTOR_LENGTH, DESCRIPTOR_TYPE);
 
     for (size_t i = 0; i < keypoints.size(); i++)
         computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
@@ -1065,7 +1087,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         _descriptors.release();
     else
     {
-        _descriptors.create(nkeypoints, 32, CV_8U);
+        _descriptors.create(nkeypoints, DESCRIPTOR_LENGTH, DESCRIPTOR_TYPE);
         descriptors = _descriptors.getMat();
     }
 
