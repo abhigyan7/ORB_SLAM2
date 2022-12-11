@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <stdint-gcc.h>
 
 #include "FORB.h"
@@ -32,13 +33,9 @@ void FORB::meanValue(const std::vector<FORB::pDescriptor> &descriptors,
   {
     mean.release();
     return;
-  }
-  else if(descriptors.size() == 1)
-  {
+  } else if(descriptors.size() == 1) {
     mean = descriptors[0]->clone();
-  }
-  else
-  {
+  } else {
     mean.resize(FORB::L, 0);
 
     vector<FORB::pDescriptor>::const_iterator it;
@@ -56,11 +53,22 @@ void FORB::meanValue(const std::vector<FORB::pDescriptor> &descriptors,
 
 // --------------------------------------------------------------------------
   
-float FORB::distance(const FORB::TDescriptor &a,
+int FORB::distance(const FORB::TDescriptor &a,
   const FORB::TDescriptor &b)
 {
 
-  return cv::norm(a, b);
+  if (a.type() != b.type()) {
+    std::cout << "Type mismatch in FORB::distance, is " << a.type() << " and " << b.type() << std::endl;
+    cv::Mat _a, _b;
+    a.convertTo(_a, CV_32F);
+    b.convertTo(_b, CV_32F);
+    int ret = static_cast<int>(cv::norm(_a, _b));
+    cout << "Distance: " << ret << ":: Descrs: " << _a << endl << _b << endl << endl;
+    return ret;
+  }
+
+  int ret = static_cast<int>(cv::norm(a, b));
+  return ret;
   // Bit set count operation from
   // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
 
@@ -91,6 +99,7 @@ std::string FORB::toString(const FORB::TDescriptor &a)
   {
     ss << (float )*p << " ";
   }
+  std::cout << "To string: " << ss.str() << std::endl;
   
   return ss.str();
 }
@@ -99,6 +108,8 @@ std::string FORB::toString(const FORB::TDescriptor &a)
   
 void FORB::fromString(FORB::TDescriptor &a, const std::string &s)
 {
+
+  std::cout << "From string: " << s << std::endl;
   a.create(1, FORB::L, CV_32F);
   float *p = a.ptr<float>();
   
@@ -137,7 +148,7 @@ void FORB::toMat32F(const std::vector<TDescriptor> &descriptors,
     
     for(int j = 0; j < C; ++j, p += 1)
     {
-      *p = desc.at<float>(j);
+      *p = desc[j];
       // p[0] = (desc[j] & (1 << 7) ? 1 : 0);
       // p[1] = (desc[j] & (1 << 6) ? 1 : 0);
       // p[2] = (desc[j] & (1 << 5) ? 1 : 0);

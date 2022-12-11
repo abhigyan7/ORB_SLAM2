@@ -1252,7 +1252,8 @@ void TemplatedVocabulary<TDescriptor,F>::transform(const TDescriptor &feature,
     for(nit = nodes.begin() + 1; nit != nodes.end(); ++nit)
     {
       NodeId id = *nit;
-      double d = F::distance(feature, m_nodes[id].descriptor);
+      const TDescriptor feature_2 = m_nodes[id].descriptor;
+      double d = F::distance(feature, feature_2);
       if(d < best_d)
       {
         best_d = d;
@@ -1414,6 +1415,8 @@ bool TemplatedVocabulary<TDescriptor,F>::loadFromTextFile(const std::string &fil
             ssd << sElement << " ";
 	}
         F::fromString(m_nodes[nid].descriptor, ssd.str());
+
+        std::cout << "Descriptor from string: " << m_nodes[nid].descriptor << std::endl;
 
         ssnode >> m_nodes[nid].weight;
 

@@ -22,9 +22,21 @@
 
 #include "System.h"
 #include "Converter.h"
+#include <cstddef>
+#include <ctime>
+#include <opencv4/opencv2/core/persistence.hpp>
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+#include <time.h>
+
+#include <iomanip>
+
+bool has_suffix(const std::string &str, const std::string &suffix) {
+    std::size_t index = str.find(suffix, str.size() - suffix.size());
+    return (index != std::string::npos);
+}
+
 
 namespace ORB_SLAM2
 {
@@ -61,8 +73,24 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Load ORB Vocabulary
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
-    mpVocabulary = new ORBVocabulary();
-    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    int k = 8;
+    int L = 4;
+    DBoW2::WeightingType weighting = DBoW2::TF_IDF;
+    DBoW2::ScoringType scoring = DBoW2::L2_NORM;
+    mpVocabulary = new ORBVocabulary(k, L, weighting, scoring);
+    bool bVocLoad = false;
+    if (has_suffix(strVocFile, ".bin"))
+    {
+        bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+    } else if (has_suffix(strVocFile, ".yml.gz"))
+    {
+        cv::FileStorage yaml_vocab_file(strVocFile, cv::FileStorage::Mode::READ);
+        mpVocabulary->load(yaml_vocab_file);
+        bVocLoad = true;
+    } else {
+        bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    }
+
     if(!bVocLoad)
     {
         cerr << "Wrong path to vocabulary. " << endl;

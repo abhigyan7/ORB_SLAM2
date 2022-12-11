@@ -34,12 +34,13 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-const int ORBmatcher::TH_HIGH = 100;
-const int ORBmatcher::TH_LOW = 50;
+const int ORBmatcher::TH_HIGH = 20000000;
+const int ORBmatcher::TH_LOW = 1000000;
 const int ORBmatcher::HISTO_LENGTH = 30;
 
 ORBmatcher::ORBmatcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrientation(checkOri)
 {
+    mbCheckOrientation = false;
 }
 
 int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoints, const float th)
@@ -176,6 +177,11 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
     DBoW2::FeatureVector::const_iterator Fit = F.mFeatVec.begin();
     DBoW2::FeatureVector::const_iterator KFend = vFeatVecKF.end();
     DBoW2::FeatureVector::const_iterator Fend = F.mFeatVec.end();
+
+    if (KFit == KFend || Fit == Fend)
+    {
+        cout << "Empty iterators in bow search" << endl;
+    }
 
     while(KFit != KFend && Fit != Fend)
     {
@@ -1641,32 +1647,34 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 }
 
-float ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
+int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 {
-
+    if (a.type() != b.type())
+    {
+        cout << "Type mismatch at ORBmatcher::DescriptorDistance" << endl;
+    }
     float dist = cv::norm(a, b);
-    cout << "Dist: " << dis << endl;
-    return dist;
+    return static_cast<int>(dist);
 }
 
 // Bit set count operation from
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-int ORBmatcher::DescriptorDistance_(const cv::Mat &a, const cv::Mat &b)
-{
-    const int *pa = a.ptr<int32_t>();
-    const int *pb = b.ptr<int32_t>();
-
-    int dist=0;
-
-    for(int i=0; i<8; i++, pa++, pb++)
-    {
-        unsigned  int v = *pa ^ *pb;
-        v = v - ((v >> 1) & 0x55555555);
-        v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
-        dist += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
-    }
-
-    return dist;
-}
+// int ORBmatcher::DescriptorDistance_(const cv::Mat &a, const cv::Mat &b)
+// {
+//     const int *pa = a.ptr<int32_t>();
+//     const int *pb = b.ptr<int32_t>();
+//
+//     int dist=0;
+//
+//     for(int i=0; i<8; i++, pa++, pb++)
+//     {
+//         unsigned  int v = *pa ^ *pb;
+//         v = v - ((v >> 1) & 0x55555555);
+//         v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
+//         dist += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
+//     }
+//
+//     return dist;
+// }
 
 } //namespace ORB_SLAM
