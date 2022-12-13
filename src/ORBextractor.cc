@@ -1057,9 +1057,13 @@ static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Ma
                                const vector<Point>& pattern)
 {
     descriptors = Mat::zeros((int)keypoints.size(), DESCRIPTOR_LENGTH, DESCRIPTOR_TYPE);
+    auto sift_descriptor = cv::SIFT::create(0, 1, 0.04, 10, 0.6, CV_32F);
+    sift_descriptor->compute(image, keypoints, descriptors);
 
-    for (size_t i = 0; i < keypoints.size(); i++)
-        computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr<float>((int)i));
+    return;
+
+    // for (size_t i = 0; i < keypoints.size(); i++)
+    //     computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr<float>((int)i));
 }
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
